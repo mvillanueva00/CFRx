@@ -45,11 +45,6 @@ for day in days:
 df = pd.DataFrame(shipment_data, index=days)
 
 # Chart: Total delivery tickets per courier
-summary = {
-    "FedEx": df["FedEx Delivery Tickets"].sum(),
-    "DCS": df["DCS Delivery Tickets"].sum()
-}
-
 fig, ax = plt.subplots(figsize=(10, 6))
 df[["FedEx Delivery Tickets", "DCS Delivery Tickets"]].plot(kind='bar', ax=ax)
 ax.set_ylabel("Delivery Tickets")
@@ -58,12 +53,20 @@ ax.grid(axis='y')
 plt.xticks(rotation=45)
 
 # Add totals to chart
-totals_text = f"FedEx Tickets: {summary['FedEx']}\nDCS Tickets: {summary['DCS']}"
-ax.text(1.02, 0.5, totals_text,
-        transform=ax.transAxes,
-        verticalalignment='center',
-        fontsize=10,
-        bbox=dict(boxstyle='round,pad=0.4', facecolor='lightgray', edgecolor='gray'))
+totals_text = (
+    f"FedEx Tickets: {df['FedEx Delivery Tickets'].sum()}\n"
+    f"FedEx Patients: {df['FedEx Patients'].sum()}\n"
+    f"DCS Tickets: {df['DCS Delivery Tickets'].sum()}\n"
+    f"DCS Patients: {df['DCS Patients'].sum()}"
+)
+
+ax.text(
+    1.02, 0.5, totals_text,
+    transform=ax.transAxes,
+    verticalalignment='center',
+    fontsize=10,
+    bbox=dict(boxstyle='round,pad=0.4', facecolor='lightgray', edgecolor='gray')
+)
 
 plt.tight_layout()
 st.pyplot(fig)
