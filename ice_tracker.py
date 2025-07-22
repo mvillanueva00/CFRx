@@ -7,70 +7,73 @@ Original file is located at
     https://colab.research.google.com/drive/1MD6R3SqR0n28B5u1oGFtD-sFCH35Dv7R
 """
 
+import streamlit as st
 import matplotlib.pyplot as plt
 
-# Function to simulate and visualize freezer performance
 def simulate_and_plot(freezers, usage_list, freeze_time=3, cases_per_freezer=12):
     days = ["Mon", "Tue", "Wed", "Thu", "Fri"]
     total_cases = freezers * cases_per_freezer
     freezer_stock = total_cases
     shortage = []
     daily_available = []
-
-    # Track when frozen cases return
     availability_tracker = {day: 0 for day in days + ["Next Mon", "Next Tue", "Next Wed"]}
 
     for i, usage in enumerate(usage_list):
         day = days[i]
-        # Re-add frozen cases that are ready today
         thawed_today = availability_tracker[day]
         freezer_stock += thawed_today
-
         daily_available.append(freezer_stock)
 
         if usage <= freezer_stock:
             freezer_stock -= usage
             shortage.append(0)
-            # Add today's usage to refreeze schedule
-            thaw_day_index = i + freeze_time
-            thaw_day = days[thaw_day_index] if thaw_day_index < len(days) else "Next " + days[thaw_day_index - len(days)]
+            thaw_index = i + freeze_time
+            thaw_day = days[thaw_index] if thaw_index < len(days) else "Next " + days[thaw_index - len(days)]
             availability_tracker[thaw_day] += usage
         else:
             shortage.append(usage - freezer_stock)
-            thaw_day_index = i + freeze_time
-            thaw_day = days[thaw_day_index] if thaw_day_index < len(days) else "Next " + days[thaw_day_index - len(days)]
+            thaw_index = i + freeze_time
+            thaw_day = days[thaw_index] if thaw_index < len(days) else "Next " + days[thaw_index - len(days)]
             availability_tracker[thaw_day] += freezer_stock
             freezer_stock = 0
 
     total_shortage = sum(shortage)
     extra_freezers_needed = ((total_shortage + cases_per_freezer - 1) // cases_per_freezer) if total_shortage > 0 else 0
 
-    # Plotting
+    # Chart
     x = range(len(days))
     bar_width = 0.35
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.bar(x, daily_available, width=bar_width, label='Available Cases', color='skyblue')
+    ax.bar([p + bar_width for p in x], usage_list, width=bar_width, label='Cases Needed', color='orange')
+    ax.plot(x, shortage, color='red', marker='o', label='Shortage')
+    ax.set_xlabel('Day')
+    ax.set_ylabel('Number of Cases')
+    ax.set_title(f'Ice Pack Usage with {freezers} Freezer(s)')
+    ax.set_xticks([p + bar_width / 2 for p in x])
+    ax.set_xticklabels(days)
+    ax.legend()
+    ax.grid(axis='y')
+    st.pyplot(fig)
 
-    plt.figure(figsize=(10, 6))
-    plt.bar(x, daily_available, width=bar_width, label='Available Cases', color='skyblue')
-    plt.bar([p + bar_width for p in x], usage_list, width=bar_width, label='Cases Needed', color='orange')
-    plt.plot(x, shortage, color='red', marker='o', label='Shortage')
-
-    plt.xlabel('Day')
-    plt.ylabel('Number of Cases')
-    plt.title(f'Ice Pack Usage with {freezers} Freezer(s)')
-    plt.xticks([p + bar_width / 2 for p in x], days)
-    plt.legend()
-    plt.grid(axis='y')
-    plt.tight_layout()
-    plt.show()
-
-    print("Daily Shortage:", shortage)
+    st.subheader("Results")
+    st.write("Daily Shortage:", shortage)
     if extra_freezers_needed > 0:
-        print(f"⚠️ Add {extra_freezers_needed} more freezer(s) to avoid running out of ice.")
+        st.warning(f"⚠️ Add {extra_freezers_needed} more freezer(s) to avoid running out of ice.")
     else:
-        print("✅ Current number of freezers is sufficient.")
+        st.success("✅ Current number of freezers is sufficient.")
 
-# 🔽 Change these inputs
-freezers = 1
-usage_list = [7, 7, 4, 4, 4]  # Example: Mon–Fri usage
+# --- Streamlit App ---
+st.title("Ice Pack Freezer Planner")
+st.write("Adjust the values below to simulate your weekly freezer usage.")
 
-simulate_and_plot(freezers, usage_list)
+freezers = st.number_input("Number of Freezers", min_value=1, value=1)
+
+st.subheader("Daily Usage")
+usage_list = []
+for day in ["Mon", "Tue", "Wed", "Thu", "Fri"]:
+    usage = st.number_input(f"{day} usage", min_value=0, value=4)
+    usage_list.append(usage)
+
+if st.button("Simulate"):
+    simulate_and_plot(freezers, usage_list)
