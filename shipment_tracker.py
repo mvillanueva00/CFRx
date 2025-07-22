@@ -36,30 +36,44 @@ shipment_data = {field: [] for field in fields}
 st.subheader("Enter daily counts")
 for day in days:
     st.markdown(f"### {day}")
-    cols = st.columns(2)
-    for i, field in enumerate(fields):
-        value = cols[i % 2].number_input(f"{field} ({day})", min_value=0, value=0, key=f"{field}_{day}")
-        shipment_data[field].append(value)
+    fedex_col, dcs_col = st.columns(2)
+
+    with fedex_col:
+        ft = st.number_input(f"FedEx Delivery Tickets ({day})", min_value=0, value=0, key=f"FedEx_Tickets_{day}")
+        fp = st.number_input(f"FedEx Patients ({day})", min_value=0, value=0, key=f"FedEx_Patients_{day}")
+        shipment_data["FedEx Delivery Tickets"].append(ft)
+        shipment_data["FedEx Patients"].append(fp)
+
+    with dcs_col:
+        dt = st.number_input(f"DCS Delivery Tickets ({day})", min_value=0, value=0, key=f"DCS_Tickets_{day}")
+        dp = st.number_input(f"DCS Patients ({day})", min_value=0, value=0, key=f"DCS_Patients_{day}")
+        shipment_data["DCS Delivery Tickets"].append(dt)
+        shipment_data["DCS Patients"].append(dp)
 
 # Convert to DataFrame
 df = pd.DataFrame(shipment_data, index=days)
 
-# Chart: Total delivery tickets per courier
+# Chart: All 4 bar groups
 fig, ax = plt.subplots(figsize=(10, 6))
-df[["FedEx Delivery Tickets", "DCS Delivery Tickets"]].plot(kind='bar', ax=ax)
-ax.set_ylabel("Delivery Tickets")
-ax.set_title(f"Delivery Tickets by Courier ({date_span})")
+colors = {
+    "FedEx Delivery Tickets": "#4C72B0",
+    "FedEx Patients": "#6BAED6",
+    "DCS Delivery Tickets": "#E6550D",
+    "DCS Patients": "#FDAE6B"
+}
+df.plot(kind='bar', ax=ax, color=[colors[col] for col in df.columns])
+ax.set_ylabel("Count")
+ax.set_title(f"Shipments & Patients by Courier ({date_span})")
 ax.grid(axis='y')
 plt.xticks(rotation=45)
 
-# Add totals to chart
+# Add all totals to chart annotation
 totals_text = (
     f"FedEx Tickets: {df['FedEx Delivery Tickets'].sum()}\n"
     f"FedEx Patients: {df['FedEx Patients'].sum()}\n"
     f"DCS Tickets: {df['DCS Delivery Tickets'].sum()}\n"
     f"DCS Patients: {df['DCS Patients'].sum()}"
 )
-
 ax.text(
     1.02, 0.5, totals_text,
     transform=ax.transAxes,
