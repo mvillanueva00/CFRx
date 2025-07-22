@@ -14,56 +14,73 @@ from io import BytesIO
 from matplotlib.backends.backend_pdf import PdfPages
 
 # Set up UI
-st.title("Weekly Shipment Tracker (FedEx & DCS)")
+st.title("Weekly Shipment Tracker")
 
 # Date range input
 st.subheader("Enter the date span for this shipment report")
 date_span = st.text_input("Date range (e.g. 7/21/2025 - 7/25/2025)", value="7/21/2025 - 7/25/2025")
 
-# Couriers and weekdays
+# Weekdays
 days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-couriers = ["FedEx", "DCS"]
 
-# User input for shipments
-st.subheader("Enter number of shipments per courier per day")
-shipment_data = {courier: [] for courier in couriers}
+# Input field names
+fields = [
+    "FedEx Delivery Tickets", "FedEx Patients",
+    "DCS Delivery Tickets", "DCS Patients"
+]
 
+# Data dictionary
+shipment_data = {field: [] for field in fields}
+
+# Input section
+st.subheader("Enter daily counts")
 for day in days:
-    st.markdown(f"**{day}**")
-    cols = st.columns(len(couriers))
-    for i, courier in enumerate(couriers):
-        val = cols[i].number_input(f"{courier}", min_value=0, value=0, key=f"{courier}_{day}")
-        shipment_data[courier].append(val)
+    st.markdown(f"### {day}")
+    cols = st.columns(2)
+    for i, field in enumerate(fields):
+        value = cols[i % 2].number_input(f"{field} ({day})", min_value=0, value=0, key=f"{field}_{day}")
+        shipment_data[field].append(value)
 
 # Convert to DataFrame
 df = pd.DataFrame(shipment_data, index=days)
 
-# Create the bar chart
+# Chart: Total delivery tickets per courier
+summary = {
+    "FedEx": df["FedEx Delivery Tickets"].sum(),
+    "DCS": df["DCS Delivery Tickets"].sum()
+}
+
 fig, ax = plt.subplots(figsize=(10, 6))
-df.plot(kind='bar', ax=ax)
-ax.set_ylabel("Number of Shipments")
-ax.set_title(f"Shipments by Courier ({date_span})")
+df[["FedEx Delivery Tickets", "DCS Delivery Tickets"]].plot(kind='bar', ax=ax)
+ax.set_ylabel("Delivery Tickets")
+ax.set_title(f"Delivery Tickets by Courier ({date_span})")
 ax.grid(axis='y')
 plt.xticks(rotation=45)
-plt.tight_layout()
 
-# Display chart in app
+# Add totals to chart
+totals_text = f"FedEx Tickets: {summary['FedEx']}\nDCS Tickets: {summary['DCS']}"
+ax.text(1.02, 0.5, totals_text,
+        transform=ax.transAxes,
+        verticalalignment='center',
+        fontsize=10,
+        bbox=dict(boxstyle='round,pad=0.4', facecolor='lightgray', edgecolor='gray'))
+
+plt.tight_layout()
 st.pyplot(fig)
 
-# Show total per courier
-st.subheader("Total Shipments This Week")
-totals = df.sum()
-for courier in couriers:
-    st.write(f"**{courier}:** {totals[courier]}")
+# Display all totals
+st.subheader("Weekly Totals")
+for field in fields:
+    total = df[field].sum()
+    st.write(f"**{field}:** {total}")
 
-# ✅ FIXED: Save chart to PDF properly
+# Save chart to PDF
 pdf_buffer = BytesIO()
 with PdfPages(pdf_buffer) as pdf:
     pdf.savefig(fig)
 pdf_buffer.seek(0)
-pdf_data = pdf_buffer.read()  # Convert to bytes
+pdf_data = pdf_buffer.read()
 
-# Download button
 st.download_button(
     label="📄 Download Chart as PDF",
     data=pdf_data,
