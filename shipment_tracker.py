@@ -16,10 +16,15 @@ from matplotlib.backends.backend_pdf import PdfPages
 # Set up UI
 st.title("Weekly Shipment Tracker (FedEx & DCS)")
 
+# Date range input
+st.subheader("Enter the date span for this shipment report")
+date_span = st.text_input("Date range (e.g. 7/21/2025 - 7/25/2025)", value="7/21/2025 - 7/25/2025")
+
+# Couriers and weekdays
 days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 couriers = ["FedEx", "DCS"]
 
-# User input
+# User input for shipments
 st.subheader("Enter number of shipments per courier per day")
 shipment_data = {courier: [] for courier in couriers}
 
@@ -33,17 +38,23 @@ for day in days:
 # Convert to DataFrame
 df = pd.DataFrame(shipment_data, index=days)
 
-# Plot bar chart
+# Create the bar chart
 fig, ax = plt.subplots(figsize=(10, 6))
 df.plot(kind='bar', ax=ax)
 ax.set_ylabel("Number of Shipments")
-ax.set_title("Shipments by Courier (Mon–Fri)")
+ax.set_title(f"Shipments by Courier ({date_span})")
 ax.grid(axis='y')
 plt.xticks(rotation=45)
 plt.tight_layout()
 
-# Display chart
+# Display chart in app
 st.pyplot(fig)
+
+# Show total per courier
+st.subheader("Total Shipments This Week")
+totals = df.sum()
+for courier in couriers:
+    st.write(f"**{courier}:** {totals[courier]}")
 
 # Save chart to PDF
 pdf_buffer = BytesIO()
@@ -51,6 +62,7 @@ with PdfPages(pdf_buffer) as pdf:
     pdf.savefig(fig)
     pdf_buffer.seek(0)
 
+# Download button
 st.download_button(
     label="📄 Download Chart as PDF",
     data=pdf_buffer,
