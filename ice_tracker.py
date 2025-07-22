@@ -11,11 +11,14 @@ import streamlit as st
 import matplotlib.pyplot as plt
 
 def simulate_and_plot(freezers, usage_list, freeze_time=3, cases_per_freezer=12):
-    days = ["Mon", "Tue", "Wed", "Thu", "Fri"]
+    total_days = len(usage_list)
+    weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri"]
+    days = weekdays * (total_days // 5)
     total_cases = freezers * cases_per_freezer
     freezer_stock = total_cases
     shortage = []
     daily_available = []
+
     availability_tracker = {day: 0 for day in days + ["Next Mon", "Next Tue", "Next Wed"]}
 
     for i, usage in enumerate(usage_list):
@@ -43,7 +46,7 @@ def simulate_and_plot(freezers, usage_list, freeze_time=3, cases_per_freezer=12)
     # Chart
     x = range(len(days))
     bar_width = 0.35
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(12, 6))
     ax.bar(x, daily_available, width=bar_width, label='Available Cases', color='skyblue')
     ax.bar([p + bar_width for p in x], usage_list, width=bar_width, label='Cases Needed', color='orange')
     ax.plot(x, shortage, color='red', marker='o', label='Shortage')
@@ -51,7 +54,7 @@ def simulate_and_plot(freezers, usage_list, freeze_time=3, cases_per_freezer=12)
     ax.set_ylabel('Number of Cases')
     ax.set_title(f'Ice Pack Usage with {freezers} Freezer(s)')
     ax.set_xticks([p + bar_width / 2 for p in x])
-    ax.set_xticklabels(days)
+    ax.set_xticklabels(days, rotation=45)
     ax.legend()
     ax.grid(axis='y')
     st.pyplot(fig)
@@ -63,17 +66,22 @@ def simulate_and_plot(freezers, usage_list, freeze_time=3, cases_per_freezer=12)
     else:
         st.success("✅ Current number of freezers is sufficient.")
 
-# --- Streamlit App ---
+# --- Streamlit UI ---
 st.title("Ice Pack Freezer Planner")
-st.write("Adjust the values below to simulate your weekly freezer usage.")
+st.write("Use the dropdown to simulate either a 1-week or 2-week schedule.")
 
+# Week Mode Toggle
+mode = st.selectbox("Select simulation period", ["1 Week (Mon–Fri)", "2 Weeks (Mon–Fri x 2)"])
+days = ["Mon", "Tue", "Wed", "Thu", "Fri"] * (2 if "2" in mode else 1)
+
+# Inputs
 freezers = st.number_input("Number of Freezers", min_value=1, value=1)
-
-st.subheader("Daily Usage")
+st.subheader("Enter expected cases used per day:")
 usage_list = []
-for day in ["Mon", "Tue", "Wed", "Thu", "Fri"]:
-    usage = st.number_input(f"{day} usage", min_value=0, value=4)
+for day in days:
+    usage = st.number_input(f"{day}", min_value=0, value=4, key=day+str(len(usage_list)))
     usage_list.append(usage)
 
 if st.button("Simulate"):
     simulate_and_plot(freezers, usage_list)
+
