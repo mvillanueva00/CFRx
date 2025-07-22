@@ -56,16 +56,17 @@ totals = df.sum()
 for courier in couriers:
     st.write(f"**{courier}:** {totals[courier]}")
 
-# Save chart to PDF
+# ✅ FIXED: Save chart to PDF properly
 pdf_buffer = BytesIO()
 with PdfPages(pdf_buffer) as pdf:
     pdf.savefig(fig)
-    pdf_buffer.seek(0)
+pdf_buffer.seek(0)
+pdf_data = pdf_buffer.read()  # Convert to bytes
 
 # Download button
 st.download_button(
     label="📄 Download Chart as PDF",
-    data=pdf_buffer,
+    data=pdf_data,
     file_name="weekly_shipments.pdf",
     mime="application/pdf"
 )
